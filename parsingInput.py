@@ -1,5 +1,13 @@
 import csv
 
+
+###########################################################################
+# This file currently completely removes points where individuals ONLY ran in 2016.
+# It then collapses a person's data, calculating statistics WITHOUT their 2016 run if it exists.
+# id, averageAge, sex, averageTime, averageRank, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation
+###########################################################################
+
+
 data = []
 with open('Project1_data.csv','rt') as csvfile:
     reader = csv.reader(csvfile)
