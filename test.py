@@ -63,19 +63,19 @@ while (i < dataLength):
 	noEntries = len(individualData)
 
 	id = individualData[0][0]
-	averageAge = ageSum / noEntries
+	averageAge = float(ageSum / noEntries)
 	sex = 0 if (individualData[0][3] == "F") else 1 # 0 = female 1 = male
-	averageTime =  timeSum / noEntries # in seconds
-	averageRank = rankSum / noEntries
-	averageWeightedAppearance = weightedAppearanceSum / noEntries
+	averageTime =  float(timeSum / noEntries) # in seconds
+	averageRank = float(rankSum / noEntries)
+	weightedAppearance = weightedAppearanceSum
 	yearsOfParticipation = noEntries
 	yearsSinceLastParticipation = 2017 - latestParticipation
 
-	individualOutput = [ id, averageAge, sex, averageTime, averageRank, averageWeightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
+	individualOutput = [ id, averageAge, sex, averageTime, averageRank, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
 
 	output.append(individualOutput)
 
 with open("output.csv", "wt") as f:
     writer = csv.writer(f)
-    writer.writerow(["ID", "averageAge", "sex", "averageTime", "averageRank", "averageWeightedAppearance", "yearsOfParticipation", "yearsSinceLastParticipation"])
+    writer.writerow(["ID", "averageAge", "sex", "averageTime", "averageRank", "weightedAppearance", "yearsOfParticipation", "yearsSinceLastParticipation"])
     writer.writerows(output)
