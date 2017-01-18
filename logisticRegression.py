@@ -3,47 +3,31 @@ import csv
 from math import exp
 from math import log
 
-def findWeights( X, Y ):
-
-	# transpose of X
-	XT = X.transpose()
-
-	# dot multiplication of XT * X
-	XTX = np.dot(XT, X)
-
-	# inverse of XTX
-	XTXinv = np.linalg.inv(XTX)
-
-	# dot of XT * Y
-	XTY = np.dot(XT, Y)
-
-	# dot of XTXinv * XTY to find weights
-	W = np.dot(XTXinv, XTY)
-
-	return W
-
-
 # Class 4 Slide 15
 def logistic ( WT, x ):
 
+	print(np.shape(WT))
+	print(np.shape(x))
+
 	WTx = np.dot(WT, x)
 
-	return (1.0 / (1.0 + exp(-WTx)))
+	print(WTx)
+
+	e = exp(-WTx)
+
+	return (1.0 / (1.0 + e))
 
 
 # Class 4 Slide 17
-def error ( X, Y, W ):
+def cost ( X, Y, W ):
+
+	WT = np.transpose(W)
 
 	sum = 0.0
-
-	WT = W.transpose()
-
 	for x, y in zip(X, Y):
-		sum += y * log(logisticFun(WT, x))
-		try:
-			sum += (1.0 - y) * log(1.0 - logisticFun(WT, x))
-		except Exception, e:
-			return -sum
+		x = np.transpose(x)
+		sum += y * log(logistic(WT, x))
+		sum += (1.0 - y) * log(1 - logistic(WT, x))
 
 	return -sum
 
@@ -51,40 +35,51 @@ def error ( X, Y, W ):
 # Class 4 Slide 17
 def getNewW ( X, Y, W, alpha ):
 	
-	WT = W.transpose()
+	WT = np.transpose(W)
 
 	sum = 0.0
-
 	for x, y in zip(X, Y):
-		sum += np.dot(x, y - logisticFun(WT, x))
+		x = np.transpose(x)
+		sum += np.dot(x, (y - logistic(WT, x)))
 
-	temp = alpha * sum
-
-	return W + temp
-
-
-def gradientDescentForLogReg( X, Y, W, alpha ):
-
-	# transpose of W
-	WT = W.transpose()
-
-	newW = getNewW(X, Y, W, alpha)
-
-
-
-	return newW
+	return W - alpha * sum
 
 
 def logisticRegression( X, Y, alpha ):
 
-	W = findWeights(X, Y)
+	#W = findWeights(X, Y)
 
-	optimizedW = gradientDescentForLogReg(X, Y, W, alpha)	
+	shape = X.shape[1]
 
-	print(optimizedW)
+	W = np.zeros(shape)
 
-	return optimizedW
+	W = np.matrix(W)
+	W = np.transpose(W)
 
+	W = getNewW(X, Y, W, alpha)
+
+	costV = cost(X, Y, W)
+
+	changeCost = 1
+
+	i = 0
+
+	while(changeCost > 0.001):
+
+		print(i)
+		i += 1
+
+		W = getNewW(X, Y, W, alpha)
+
+		#print(W)
+
+		oldCostV = costV
+		costV = cost(X, Y, W)
+		changeCost = oldCostV - costV
+
+
+	return W
+	
 
 
 data = []
@@ -99,8 +94,8 @@ with open('result.csv','rt') as csvfile:
     for row in reader:
         result.append(row)
 
-data = data[1:500]	
-result = result[1:500]
+data = data[1:2]	
+result = result[1:2]
 
 # remove ID from all entries
 # convert to float
@@ -118,13 +113,13 @@ for entry in result:
 	parsedResult.append(float(entry[0]))
 
 # X data
-X = np.array(parsedData)
+X = np.matrix(parsedData)
 
 # Y result
-Y = np.array(parsedResult)
+Y = np.matrix(parsedResult)
 
 # alpha: step for gradientDescent
-alpha = 0.000000002
+alpha = 0.001
 
 # Weights
 W = logisticRegression(X, Y, alpha)
