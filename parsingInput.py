@@ -4,7 +4,7 @@ import csv
 #########################################################################################################################
 # This file currently completely removes points where individuals ONLY ran in 2016.
 # It then collapses a person's data, calculating statistics WITHOUT their 2016 run if it exists.
-# id, averageAge, sex, averageTime, averageRank, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation
+# "ID", "ageCategoryWeight", "sex", "averageTime", "averageRank", "weightedAppearance", "yearsOfParticipation", "yearsSinceLastParticipation"
 #########################################################################################################################
 
 ageDist = {
@@ -40,6 +40,15 @@ def main():
 
 	aggregatedIndividuals = aggregateIndividuals(data)
 
+	# Remove any aggregatedIndividual that contains multiple runs in the same year
+	aggregatedIndividuals = removeDuplicatedPerson(aggregatedIndividuals)
+
+	# Remove half-marathons
+	aggregatedIndividuals = removeHalfMarathons(aggregatedIndividuals)
+	
+	# Remove empty lists
+	aggregatedIndividuals = [x for x in aggregatedIndividuals if x != []]
+
 	# update the age distribution curve
 	for aggregatedIndividual in aggregatedIndividuals:
 		for individualEntry in aggregatedIndividual:
@@ -52,12 +61,12 @@ def main():
 
 	(collapsedIndividuals, result) = collapseIndividuals(aggregatedIndividuals)
 
-	with open("parsedOutput.csv", "wt", newline='') as f:
+	with open("parsedOutput.csv", "wt") as f:
 		writer = csv.writer(f)
 		writer.writerow([ "ID", "ageCategoryWeight", "sex", "averageTime", "averageRank", "weightedAppearance", "yearsOfParticipation", "yearsSinceLastParticipation" ])
 		writer.writerows(collapsedIndividuals)
 
-	with open("result.csv", "wt", newline='') as f:
+	with open("result.csv", "wt") as f:
 	    writer = csv.writer(f)
 	    writer.writerow([ "ID", "participatedIn2016" ])
 	    writer.writerows(result)
@@ -247,5 +256,45 @@ def getAgeCategoryWeight(age):
 		weight = ageDist['g95-']
 
 	return weight
+
+def removeDuplicatedPerson(aggregatedIndividuals):
+
+	for aggregatedIndividual in aggregatedIndividuals:
+
+		yearsOfRun = []
+
+		for individualEntry in aggregatedIndividual:
+
+			participationYear = int(individualEntry[7])
+
+			if participationYear in yearsOfRun:
+				aggregatedIndividuals.pop(aggregatedIndividuals.index(aggregatedIndividual))
+				break
+			else:
+				yearsOfRun.append(participationYear)
+
+	return aggregatedIndividuals
+
+def removeHalfMarathons(aggregatedIndividuals):
+
+	for aggregatedIndividual in aggregatedIndividuals:
+		for individualEntry in aggregatedIndividual:
+
+			splitTime = individualEntry[5].split(":")
+			runTime = float(splitTime[0]) * 3600 + float(splitTime[1]) * 60 + float(splitTime[2])
+
+			splitPace = individualEntry[6].split(":")
+			paceTime = float(splitPace[0]) * 60 + float(splitPace[1])
+
+			# A marathon is 26 miles, but I put 23 just in case of errors
+			if (runTime / paceTime < 23.0):
+
+				tempIndex = aggregatedIndividuals.index(aggregatedIndividual)
+
+				aggregatedIndividual.pop(aggregatedIndividual.index(individualEntry))
+
+				aggregatedIndividuals[tempIndex] = aggregatedIndividual
+
+	return aggregatedIndividuals
 
 main()

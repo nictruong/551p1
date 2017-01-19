@@ -58,39 +58,48 @@ def getNewW ( X, Y, W, alpha ):
 
 def logisticRegression( X, Y, alpha ):
 
-	#W = findWeights(X, Y)
-
-	shape = X.shape[1]	
-
+	# Normalize Data
 	meanX = (np.mean(X, axis=0))
 	stdX = np.std(X, axis=0)
 
 	X = (X - meanX) / stdX
 
-	print(X)
+	# Insert a column of x0 = 1
+	(row, col) = X.shape
+	X = np.insert(X, col, 1.0, axis=1)
+
+	# Initialize W as matrix of 0s
+	shape = X.shape[1]	
 
 	W = np.zeros(shape)
 	W = np.matrix(W)
 	W = np.transpose(W)
 
+	# Find initial error with W = [0]
 	errorV = error(X, Y, W)
 
+	# Dummy value so that 10 > 0.5
 	deltaError = 10
 
+	# Iteration counter
 	i = 0
 
+	# If deltaError ever becomes negative AND/OR becomes smaller than the threshold, stop
 	while(deltaError > 0.5):
 
 		print(i)
 		i += 1
 
+		# Save old error
 		oldErrorV = errorV
 
+		# Get new set of W
 		W = getNewW(X, Y, W, alpha)
-		# print(W)
 
+		# Get new error with new set of W
 		errorV = error(X, Y, W)
 
+		# Find error difference
 		deltaError = oldErrorV - errorV
 
 		print("olderrorV " + str(oldErrorV))
@@ -137,7 +146,7 @@ def main():
 	Y = np.matrix(parsedResult).transpose()
 
 	# alpha: step for gradientDescent
-	alpha = 0.00015
+	alpha = 0.0001
 
 	# Weights
 	W = logisticRegression(X, Y, alpha)
