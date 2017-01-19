@@ -26,13 +26,9 @@ class NaiveBayesClassification:
 
         for id in data_by_id:
             individualData = data_by_id[id]
-            ageSum = 0
-            timeSum = 0
-            rankSum = 0
-            latestParticipation = 0
-            numberOfParticipations = 0
-            participatedIn2016 = False
-            participatedIn2015 = False
+            ageSum = timeSum = rankSum = 0
+            latestParticipation = numberOfParticipations = 0
+            participatedIn2016 = participatedIn2015 = False
             for individualEntry in individualData:
                 year = int(individualEntry[7])
                 if year == 2016:
@@ -61,7 +57,7 @@ class NaiveBayesClassification:
                 individualOutput = [id, averageAge, float(sex), averageTime, averageRank,
                                     float(numberOfParticipations),
                                     participatedIn2015_int]
-                if numberOfParticipations < 20:
+                if numberOfParticipations < 20: #"private" runner problem
                     output.append(individualOutput)
                     result.append([id, participatedIn2016_int])
 
@@ -71,7 +67,6 @@ class NaiveBayesClassification:
         separated = {}
         for i in range(len(self.dataset)):
             vector = self.dataset[i]
-            #print vector
             if (vector[-1] not in separated):
                 separated[vector[-1]] = []
             separated[vector[-1]].append(vector[1:-1])
@@ -88,22 +83,19 @@ class NaiveBayesClassification:
         return 1/(np.sqrt(2*np.pi * variance)) * np.exp(-((x - mean) ** 2)/(2*variance))
 
     def compute_class_probability(self, features, for_class):
-        total = 0
+        total = math.log(len(self.separated_data[for_class]) / float(len(self.dataset)))
+        #total = 0
         for i in range(len(features)):
             total += math.log(self.compute_probability(features[i],
                               self.separated_statistics[for_class][0][i],
                               self.separated_statistics[for_class][1][i]))
-            #print total
-            #total *= 0.5 #class probability
         return total
 
     def __init__(self):
         print "Go!"
         self.dataset, self.result = self.load_csv()
-        print "Step1"
-        separated_data = self.separate_data_by_class()
-        self.separated_statistics = self.compute_separated_statistics(separated_data)
-        print self.separated_statistics
+        self.separated_data = self.separate_data_by_class()
+        self.separated_statistics = self.compute_separated_statistics(self.separated_data)
         nb_success = 0
         for entry in self.dataset:
             prob_0 = self.compute_class_probability(entry[1:-1], 0)
@@ -120,6 +112,5 @@ class NaiveBayesClassification:
         print nb_success
         print "Rate :"+str(nb_success / float(len(self.dataset)))
 
-        #print separated_statistics
 
 NaiveBayesClassification()
