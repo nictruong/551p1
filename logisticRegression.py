@@ -3,7 +3,6 @@ import csv
 from math import exp
 from math import log
 import math
-from decimal import *
 
 # Class 4 Slide 15
 def logistic ( WT, x ):
@@ -13,7 +12,7 @@ def logistic ( WT, x ):
 	# These following checks are made, or else if sigmoid returns 0 or 1, the error function will fail
 	try:
 		temp = math.e**(-WTx)
-	except Exception, e:
+	except Exception as e:
 		return 2.2250738585072014e-308 # exp(-WTx) is very big, so the sigmoid function would return something very small.
 
 	if (float(1) / (float(1) + exp(-WTx)) == 1.0): # exp(-WTx) is very small, so the sigmoid function would return something close to 1
@@ -35,7 +34,7 @@ def error ( X, Y, W ):
 		try:
 			sum += np.asscalar(y) * log(logFunV)
 			sum += (float(1) - np.asscalar(y)) * log(float(1) - logFunV)
-		except Exception, e:
+		except Exception as e:
 			raise e
 
 	return -sum
@@ -63,12 +62,12 @@ def logisticRegression( X, Y, alpha ):
 
 	shape = X.shape[1]	
 
-	print(shape)
+	meanX = (np.mean(X, axis=0))
+	stdX = np.std(X, axis=0)
 
-	A = (np.mean(X, axis=0))
-	B = np.std(X, axis=0)
+	X = (X - meanX) / stdX
 
-	X = (X - A) / B
+	print(X)
 
 	W = np.zeros(shape)
 	W = np.matrix(W)
@@ -80,7 +79,7 @@ def logisticRegression( X, Y, alpha ):
 
 	i = 0
 
-	while(deltaError > 5):
+	while(deltaError > 0.5):
 
 		print(i)
 		i += 1
