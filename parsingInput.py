@@ -46,7 +46,7 @@ def main():
 	# Remove half-marathons
 	aggregatedIndividuals = removeHalfMarathons(aggregatedIndividuals)
 	
-	# Remove empty lists
+	# Remove empty lists (due to some people only running a half-marathon)
 	aggregatedIndividuals = [x for x in aggregatedIndividuals if x != []]
 
 	# update the age distribution curve
@@ -54,7 +54,7 @@ def main():
 		for individualEntry in aggregatedIndividual:
 			# Ignore 2016 entries, as they will be used for prediction
 			if (int(individualEntry[7]) == 2016):
-				participatedIn2016 = True
+				participatedInLastYear = True
 				continue
 			else:
 				updateAgeDistribution(int(individualEntry[2]))
@@ -68,7 +68,7 @@ def main():
 
 	with open("result.csv", "wt") as f:
 	    writer = csv.writer(f)
-	    writer.writerow([ "ID", "participatedIn2016" ])
+	    writer.writerow([ "ID", "participatedInLastYear" ])
 	    writer.writerows(result)
 
 
@@ -117,14 +117,14 @@ def collapseIndividuals(individualDatas):
 		rankSum = 0
 		latestParticipation = 0
 		weightedAppearanceSum = 0
-		participatedIn2016 = False
+		participatedInLastYear = False
 		noEntries = len(individualData)
 
 		for individualEntry in individualData:
 
 			# Ignore 2016 entries, as they will be used for prediction
 			if (int(individualEntry[7]) == 2016):
-				participatedIn2016 = True
+				participatedInLastYear = True
 				continue
 			else:
 				# ageSum += int(individualEntry[2])
@@ -148,7 +148,7 @@ def collapseIndividuals(individualDatas):
 				elif(participationYear >= 2013 and participationYear <= 2016):
 					weightedAppearanceSum += 4
 
-		if (participatedIn2016 and noEntries == 1):
+		if (participatedInLastYear and noEntries == 1):
 			continue
 		else:
 			id = individualData[0][0]
@@ -158,14 +158,14 @@ def collapseIndividuals(individualDatas):
 			averageTime =  float(timeSum) / float(noEntries) # in seconds
 			averageRank = float(rankSum) / float(noEntries)
 			weightedAppearance = weightedAppearanceSum
-			yearsOfParticipation = noEntries - 1 if (participatedIn2016) else noEntries
+			yearsOfParticipation = noEntries - 1 if (participatedInLastYear) else noEntries
 			yearsSinceLastParticipation = 0 if (latestParticipation == 0) else 2016 - latestParticipation
 
 			individualOutput = [ id, ageCategoryWeight, sex, averageTime, averageRank, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
 
 			output.append(individualOutput)
 
-			if (participatedIn2016):
+			if (participatedInLastYear):
 				resultY.append([ id, 1 ])
 			else:
 				resultY.append([ id, 0 ])
