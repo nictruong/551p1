@@ -108,6 +108,7 @@ def collapseIndividuals(individualDatas):
 	output = []
 	resultY = []
 
+	firstTimers = 0
 
 	for individualData in individualDatas:
 
@@ -127,7 +128,7 @@ def collapseIndividuals(individualDatas):
 				participatedInLastYear = True
 				continue
 			else:
-				# ageSum += int(individualEntry[2])
+				ageSum += int(individualEntry[2])
 
 				splitTime = individualEntry[5].split(":")
 				timeSum += int(splitTime[0]) * 3600 + int(splitTime[1]) * 60 + int(splitTime[2])
@@ -149,19 +150,23 @@ def collapseIndividuals(individualDatas):
 					weightedAppearanceSum += 4
 
 		if (participatedInLastYear and noEntries == 1):
+			firstTimers += 1
 			continue
 		else:
 			id = individualData[0][0]
-			ageCategoryWeight = getAgeCategoryWeight(int(individualEntry[2]))
-			# averageAge = float(ageSum) / float(noEntries)
-			sex = 0 if (individualData[0][3] == "F") else 1 # 0 = female 1 = male
-			averageTime =  float(timeSum) / float(noEntries) # in seconds
-			averageRank = float(rankSum) / float(noEntries)
-			weightedAppearance = weightedAppearanceSum
 			yearsOfParticipation = noEntries - 1 if (participatedInLastYear) else noEntries
+			ageCategoryWeight = getAgeCategoryWeight(int(individualEntry[2]))
+			averageAge = float(ageSum) / float(yearsOfParticipation)
+			sex = 0 if (individualData[0][3] == "F") else 1 # 0 = female 1 = male
+			averageTime =  float(timeSum) / float(yearsOfParticipation) # in seconds
+			averageRank = float(rankSum) / float(yearsOfParticipation)
+			weightedAppearance = weightedAppearanceSum
 			yearsSinceLastParticipation = 0 if (latestParticipation == 0) else 2016 - latestParticipation
 
-			individualOutput = [ id, ageCategoryWeight, sex, averageTime, averageRank, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
+			#individualOutput = [ id, ageCategoryWeight, sex, averageTime, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
+
+			individualOutput = [ id, averageAge, sex, averageTime, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation
+ ]
 
 			output.append(individualOutput)
 
@@ -169,6 +174,8 @@ def collapseIndividuals(individualDatas):
 				resultY.append([ id, 1 ])
 			else:
 				resultY.append([ id, 0 ])
+
+	print(firstTimers)
 
 	return (output, resultY)
 
@@ -277,6 +284,8 @@ def removeDuplicatedPerson(aggregatedIndividuals):
 
 def removeHalfMarathons(aggregatedIndividuals):
 
+	halfMa = 0
+
 	for aggregatedIndividual in aggregatedIndividuals:
 		for individualEntry in aggregatedIndividual:
 
@@ -289,11 +298,15 @@ def removeHalfMarathons(aggregatedIndividuals):
 			# A marathon is 26 miles, but I put 23 just in case of errors
 			if (runTime / paceTime < 23.0):
 
+				halfMa += 1
+
 				tempIndex = aggregatedIndividuals.index(aggregatedIndividual)
 
 				aggregatedIndividual.pop(aggregatedIndividual.index(individualEntry))
 
 				aggregatedIndividuals[tempIndex] = aggregatedIndividual
+
+	print(halfMa)
 
 	return aggregatedIndividuals
 
