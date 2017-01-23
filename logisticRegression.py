@@ -61,6 +61,8 @@ def logisticRegression( X, Y, alpha ):
 
 	X = normalizeAndAddX0(X)
 
+	X, Y = shuffle(X, Y)
+
 	# Initialize W as matrix of 0s
 	shape = X.shape[1]	
 
@@ -80,7 +82,7 @@ def logisticRegression( X, Y, alpha ):
 	# If deltaError ever becomes negative AND/OR becomes smaller than the threshold, stop
 	while(deltaError > 0.5):
 
-		# print(i)
+		print(i)
 		i += 1
 
 		# Save old error
@@ -95,9 +97,9 @@ def logisticRegression( X, Y, alpha ):
 		# Find error difference
 		deltaError = oldErrorV - errorV
 
-		# print("olderrorV " + str(oldErrorV))
-		# print("errorV " + str(errorV))
-		# print("deltaError " + str(deltaError))
+		print("olderrorV " + str(oldErrorV))
+		print("errorV " + str(errorV))
+		print("deltaError " + str(deltaError))
 
 	return W
 
@@ -242,10 +244,10 @@ def main():
 	alpha = 0.0001
 
 	# Weights
-	#W = logisticRegression(X, Y, alpha)
+	W = logisticRegression(X, Y, alpha)
 
 	# Testing
-	kFoldTesting(X, Y, alpha)
+	#kFoldTesting(X, Y, alpha)
 	
 	#dummyTesting(X, Y, alpha)
 
