@@ -3,8 +3,8 @@ import csv
 from math import exp
 from math import log
 import math
-import random
 import matplotlib.pyplot as plt
+import random
 
 # Class 4 Slide 15
 def logistic ( WT, x ):
@@ -181,18 +181,23 @@ def kFoldTesting(X, Y, alpha, errorThres):
 		trainingY = np.vstack((trainingY1, trainingY2))
 
 		(trainingW, iter, errorList) = logisticRegression(trainingX, trainingY, alpha, errorThres)
-		calcError = error(validationX, validationY, trainingW)
-		print("error: " + str(calcError))
+		trainError = error(normalizeAndAddX0(trainingX), trainingY, trainingW)
 
-		success = 0
-		errorV = 0
-		comingGuess = 0
-		notComingGuess = 0
-		successComing = 0
-		successNotComing = 0
 
-		actuallyCame = 0
-		actuallyDidntCome = 0
+		# STATS
+		class1 = 0
+		class0 = 0
+
+		class1Guess = 0
+		class0Guess = 0
+		
+		m11 = 0
+		m00 = 0
+
+		m10 = 0
+		m01 = 0
+
+
 
 		trainingWT = np.transpose(trainingW)
 
@@ -203,50 +208,38 @@ def kFoldTesting(X, Y, alpha, errorThres):
 			x = np.transpose(x)
 
 			if y == 1:
-				actuallyCame += 1
+				class1 += 1
 			elif y == 0:
-				actuallyDidntCome += 1
+				class0 += 1
 
 			logFunV = logistic(trainingWT, x)
 
 			if (logFunV > 0.5 and y == 1):
-				successComing += 1
+				m11 += 1
 
 			if (logFunV <= 0.5 and y == 0):
-				successNotComing += 1				
+				m00 += 1			
+
+			if (logFunV <= 0.5 and y == 1):
+				m10 += 1
+
+			if (logFunV > 0.5 and y == 0):
+				m01 += 1	
 
 			if (logFunV > 0.5):
-				comingGuess += 1
+				class1Guess += 1
 
-			if (logFunV < 0.5):
-				notComingGuess += 1
+			if (logFunV <= 0.5):
+				class0Guess += 1
 
-			if ((logFunV > 0.5 and y == 1) or (logFunV <= 0.5 and y == 0)):
-				success += 1
+		validError = error(validationX, validationY, trainingW)
 
-			if ((logFunV <= 0.5 and y == 1) or (logFunV > 0.5 and y == 0)):
-				errorV += 1
-
-		overallSuccessPercent = float(success) / float(len(validationX))
-		overallErrorPercent = float(errorV) / float(len(validationX))
-
-		print("overallSuccess%: " + str(overallSuccessPercent))
-		print("overallError%: " + str(overallErrorPercent))
-		print("overallSuccess: " + str(success))
-		print("overallError: " + str(errorV))
-		print("comingGuess: " + str(comingGuess))
-		print("notComingGuess: " + str(notComingGuess))
-		print("successComing: " + str(successComing))
-		print("successNotComing: " + str(successNotComing))
-		print("actuallyCame: " + str(actuallyCame))
-		print("actuallyDidntCome: " + str(actuallyDidntCome))
-
-		stats.append([k, overallSuccessPercent, overallErrorPercent, success, errorV, comingGuess, notComingGuess, successComing, successNotComing, actuallyCame, actuallyDidntCome, calcError])
+		stats.append([k, trainError, validError, class1, class0, class1Guess, class0Guess, m11, m00, m10, m01])
 
 
 	with open("stats.csv", "wt") as f:
 		writer = csv.writer(f)
-		writer.writerow(["k", "overallSuccessPercent", "overallMistakePercent", "correct", "mistakes", "comingGuess", "notComingGuess", "correctComing", "mistakeComing", "actuallyCame", "actuallyDidntCome", "error"])
+		writer.writerow(["k", "trainError", "validError", "class1", "class0", "class1Guess", "class0Guess", "m11", "m00", "m10", "m01"])
 		writer.writerows(stats)
 
 
@@ -263,13 +256,13 @@ def main():
 	    for row in reader:
 	        result.append(row)
 
-	data = data[1:]	
-	result = result[1:]
-
 	# remove ID from all entries
 	# convert to float
 	parsedData = []
 	parsedResult = []
+
+	data = data[1:]
+	result = result[1:]
 
 	for entry in data:
 		entry.pop(0)
@@ -280,11 +273,26 @@ def main():
 		entry.pop(0)
 		parsedResult.append(float(entry[0]))
 
+	length = len(data)
+	end = int(length * 0.8)
+
+	print(length, end)
+
+	random.shuffle(parsedData, lambda: 0.4)
+	random.shuffle(parsedResult, lambda: 0.4)
+
+	train_validate_data = parsedData[0:end]	
+	train_validate_result = parsedResult[0:end]
+
+	test_data = parsedData[end + 1 :]
+	test_result = parsedResult[end + 1 :]
+
+
 	# X data
-	X = np.matrix(parsedData)
+	X = np.matrix(train_validate_data)
 
 	# Y result
-	Y = np.matrix(parsedResult).transpose()
+	Y = np.matrix(train_validate_result).transpose()
 
 	# alpha: step for gradientDescent
 	alpha = 0.0005

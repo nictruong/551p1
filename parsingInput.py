@@ -165,8 +165,7 @@ def collapseIndividuals(individualDatas):
 
 			#individualOutput = [ id, ageCategoryWeight, sex, averageTime, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
 
-			individualOutput = [ id, averageAge, sex, averageTime, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation
- ]
+			individualOutput = [ id, averageAge, sex, averageTime, weightedAppearance, yearsOfParticipation, yearsSinceLastParticipation ]
 
 			output.append(individualOutput)
 
