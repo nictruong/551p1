@@ -247,7 +247,7 @@ def kFoldCrossValidation():
         X, Y, W = calculateLeastSquareSolution(data, result)
         Ypredict = predictY(X, W)
         avgSqrError = calculateTrainingError(Ypredict, Y)
-        print "Training: " + str(time.strftime("%H:%M:%S", time.gmtime(avgSqrError)))
+        print "Training: " + (str(float(avgSqrError)/2400))
         totalTrainingErrorAverage = avgSqrError
         trainingErrorWMap[avgSqrError] = W 
         
@@ -258,15 +258,18 @@ def kFoldCrossValidation():
         
         Y_validation_predict = predictY(X_validation, W)        
         avgSqrError = calculateTrainingError(Y_validation_predict, Y_validation)
-        print  "Testing: " + str(time.strftime("%H:%M:%S", time.gmtime(avgSqrError)))
+        print  "Testing: " + (str(float(avgSqrError)/2400))
         totalValidationErrorAverage = avgSqrError
             
     
     totalTrainingErrorAverage = totalTrainingErrorAverage / KFold
     totalValidationErrorAverage = totalValidationErrorAverage / KFold
     
-    print "Total Training Error Average:" + time.strftime("%H:%M:%S", time.gmtime(totalTrainingErrorAverage))    
-    print "Total Validation Error Average:" + time.strftime("%H:%M:%S", time.gmtime(totalValidationErrorAverage))
+    totalTrainingErrorAverage = (float(totalTrainingErrorAverage))/2400
+    print "Total Training Error Average:" + str(totalTrainingErrorAverage)
+    totalValidationErrorAverage = (float(totalValidationErrorAverage))/2400
+    print "Total Validation Error Average:" + str(totalValidationErrorAverage)
+    
     return trainingErrorWMap
         
 
