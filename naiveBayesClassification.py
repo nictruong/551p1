@@ -26,9 +26,9 @@ class NaiveBayesClassification:
                 data_by_id[id] = []
             data_by_id[id].append(i)
 
-        data_by_id = self.remove_double_id(data_by_id)
-        data_by_id = self.remove_entry_above(data_by_id, prediction_year)
-        data_by_id = self.remove_unknown(data_by_id)
+        #data_by_id = self.remove_double_id(data_by_id)
+        #data_by_id = self.remove_entry_above(data_by_id, prediction_year)
+        #data_by_id = self.remove_unknown(data_by_id)
 
         for id in data_by_id:
             individualData = data_by_id[id]
@@ -61,27 +61,26 @@ class NaiveBayesClassification:
                 participationYear = int(individualEntry[7])
                 if participationYear > latestParticipation:
                     latestParticipation = participationYear
+            if numberOfHalfMarathon == 1 and numberOfParticipations == 1:
+                timeSum = 15300
 
-            if latestParticipation == prediction_year and numberOfParticipations == 1:
-                continue
-            elif numberOfHalfMarathon == 1 and numberOfParticipations == 1:
-                continue
-            elif numberOfParticipations > 0:
+            #if latestParticipation == prediction_year and numberOfParticipations == 1:
+            #    continue
+            #elif numberOfHalfMarathon == 1 and numberOfParticipations == 1:
+            #    continue
+            if numberOfParticipations > 0:
                 averageAge = float(ageSum) / float(numberOfParticipations)
                 sex = 0 if (individualData[0][3] == "F") else 1  # 0 = female 1 = male
-                averageTime = float(timeSum) / float(numberOfParticipations - numberOfHalfMarathon)  # in seconds
+               #  averageTime = float(timeSum) / float(numberOfParticipations - numberOfHalfMarathon)  # in seconds
+                averageTime = float(timeSum) / float(numberOfParticipations )  # in seconds
                 averageRank = float(rankSum) / float(numberOfParticipations)
                 participatedInTargetYear = 1 if participatedInTargetYear else 0
                 participatedInPredictionYear = 1 if participatedInPredictionYear else 0
                 individualOutput = [id, sex, numberOfParticipations, averageAge, averageTime, averageRank,
                                     participatedInTargetYear]
-                if numberOfParticipations < 20:  # "private" runner problem
-                    output.append(individualOutput)
-                    result.append([id, participatedInPredictionYear])
-        #with open("report.csv", "wt") as f:
-        #    writer = csv.writer(f)
-        #    writer.writerow(["ID", "sex", "age", "time", "rank", "numberOfParticipations", "participation"])
-        #    writer.writerows(output)
+                #if numberOfParticipations < 20:  # "private" runner problem
+                output.append(individualOutput)
+                result.append([id, participatedInPredictionYear])
         return output, result
 
     def remove_double_id(self, data_by_id):
