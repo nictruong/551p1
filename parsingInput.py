@@ -305,7 +305,7 @@ def removeHalfMarathons(aggregatedIndividuals):
 
 				aggregatedIndividuals[tempIndex] = aggregatedIndividual
 
-	print(halfMa)
+	#print(halfMa)
 
 	return aggregatedIndividuals
 

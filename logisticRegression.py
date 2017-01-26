@@ -243,6 +243,71 @@ def kFoldTesting(X, Y, alpha, errorThres):
 		writer.writerows(stats)
 
 
+def test(X, Y, W):
+
+	(X, Y) = shuffle(X, Y)
+
+	for y in Y:
+		print y
+
+	X = normalizeAndAddX0(X)
+
+	WT = np.transpose(W)
+
+	# STATS
+	class1 = 0
+	class0 = 0
+
+	class1Guess = 0
+	class0Guess = 0
+	
+	m11 = 0
+	m00 = 0
+
+	m10 = 0
+	m01 = 0
+
+	stats = []
+
+	for x, y in zip(X, Y):
+
+		x = np.transpose(x)
+
+		if y == 1:
+			class1 += 1
+		elif y == 0:
+			class0 += 1
+
+
+		logFunV = logistic(WT, x)
+
+		if (logFunV > 0.5 and y == 1):
+			m11 += 1
+
+		if (logFunV <= 0.5 and y == 0):
+			m00 += 1			
+
+		if (logFunV <= 0.5 and y == 1):
+			m10 += 1
+
+		if (logFunV > 0.5 and y == 0):
+			m01 += 1	
+
+		if (logFunV > 0.5):
+			class1Guess += 1
+
+		if (logFunV <= 0.5):
+			class0Guess += 1
+
+	errorV = error(X, Y, W)
+
+	stats.append([errorV, class1, class0, class1Guess, class0Guess, m11, m00, m10, m01])
+
+	with open("teststats.csv", "wt") as f:
+		writer = csv.writer(f)
+		writer.writerow(["error", "class1", "class0", "class1Guess", "class0Guess", "m11", "m00", "m10", "m01"])
+		writer.writerows(stats)
+
 def main():
 	data = []
 	result = []
@@ -264,6 +329,9 @@ def main():
 	data = data[1:]
 	result = result[1:]
 
+	data = data[145:] + data[:145] 
+	result = result[145:] + result[:145]
+
 	for entry in data:
 		entry.pop(0)
 		entry = [float(i) for i in entry]
@@ -276,8 +344,6 @@ def main():
 	length = len(data)
 	end = int(length * 0.8)
 
-	print(length, end)
-
 	random.shuffle(parsedData, lambda: 0.4)
 	random.shuffle(parsedResult, lambda: 0.4)
 
@@ -287,12 +353,21 @@ def main():
 	test_data = parsedData[end + 1 :]
 	test_result = parsedResult[end + 1 :]
 
-
 	# X data
 	X = np.matrix(train_validate_data)
 
 	# Y result
 	Y = np.matrix(train_validate_result).transpose()
+
+	Xtest = np.matrix(test_data)
+	Ytest = np.matrix(test_result).transpose()
+
+	counter = 0
+	for y in Y:
+		if y == 1:
+			counter += 1
+
+	print counter
 
 	# alpha: step for gradientDescent
 	alpha = 0.0005
@@ -320,6 +395,12 @@ def main():
 	# plt.show()
 
 	# Testing
-	kFoldTesting(X, Y, alpha, errorThres)
+	#kFoldTesting(X, Y, alpha, errorThres)
+
+	(trainingW, iter, errorList) = logisticRegression(X, Y, alpha, errorThres)
+
+	
+
+	test(Xtest, Ytest, trainingW)
 
 main()
