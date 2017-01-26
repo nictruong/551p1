@@ -28,15 +28,11 @@ class NaiveBayesClassification:
 
         data_by_id = self.remove_double_id(data_by_id)
         data_by_id = self.remove_entry_above(data_by_id, prediction_year)
-        for id in data_by_id:
-            for individualEntry in data_by_id[id]:
-                year = int(individualEntry[7])
-                if year > prediction_year:
-                    data_by_id[id].remove(individualEntry)
+        data_by_id = self.remove_unknown(data_by_id)
 
         for id in data_by_id:
             individualData = data_by_id[id]
-            ageSum = timeSum = rankSum = 0
+            ageSum = timeSum = rankSum = numberOfHalfMarathon = 0
             latestParticipation = numberOfParticipations = 0
             participatedInTargetYear = participatedInPredictionYear = False
 
@@ -54,27 +50,38 @@ class NaiveBayesClassification:
 
                 numberOfParticipations += 1
                 ageSum += int(individualEntry[2])
-                splitTime = individualEntry[5].split(":")
-                timeSum += int(splitTime[0]) * 3600 + int(splitTime[1]) * 60 + int(splitTime[2])
+
+                if not self.is_half_marathon(individualEntry):
+                    splitTime = individualEntry[5].split(":")
+                    timeSum += int(splitTime[0]) * 3600 + int(splitTime[1]) * 60 + int(splitTime[2])
+                else:
+                    numberOfHalfMarathon += 1
+
                 rankSum += int(individualEntry[4])
                 participationYear = int(individualEntry[7])
                 if participationYear > latestParticipation:
                     latestParticipation = participationYear
 
-            if latestParticipation != prediction_year and numberOfParticipations > 1:
+            if latestParticipation == prediction_year and numberOfParticipations == 1:
+                continue
+            elif numberOfHalfMarathon == 1 and numberOfParticipations == 1:
+                continue
+            elif numberOfParticipations > 0:
                 averageAge = float(ageSum) / float(numberOfParticipations)
                 sex = 0 if (individualData[0][3] == "F") else 1  # 0 = female 1 = male
-                averageTime = float(timeSum) / float(numberOfParticipations)  # in seconds
+                averageTime = float(timeSum) / float(numberOfParticipations - numberOfHalfMarathon)  # in seconds
                 averageRank = float(rankSum) / float(numberOfParticipations)
                 participatedInTargetYear = 1 if participatedInTargetYear else 0
                 participatedInPredictionYear = 1 if participatedInPredictionYear else 0
-                individualOutput = [id, sex, averageAge, averageTime, averageRank,
-                                    float(numberOfParticipations),
+                individualOutput = [id, sex, numberOfParticipations, averageAge, averageTime, averageRank,
                                     participatedInTargetYear]
                 if numberOfParticipations < 20:  # "private" runner problem
                     output.append(individualOutput)
                     result.append([id, participatedInPredictionYear])
-
+        #with open("report.csv", "wt") as f:
+        #    writer = csv.writer(f)
+        #    writer.writerow(["ID", "sex", "age", "time", "rank", "numberOfParticipations", "participation"])
+        #    writer.writerows(output)
         return output, result
 
     def remove_double_id(self, data_by_id):
@@ -91,6 +98,30 @@ class NaiveBayesClassification:
             del data_by_id[id]
 
         return data_by_id
+
+    def remove_unknown(self, data_by_id):
+        bad_ids = set()
+        for id in data_by_id:
+            for individualEntry in data_by_id[id]:
+                name = individualEntry[1]
+                if "unknown" in name:
+                    bad_ids.add(id)
+                if "private" in name:
+                    bad_ids.add(id)
+        for id in bad_ids:
+            del data_by_id[id]
+
+        return data_by_id
+
+    def is_half_marathon(self, entry):
+        splitTime = entry[5].split(":")
+        runTime = float(splitTime[0]) * 3600 + float(splitTime[1]) * 60 + float(splitTime[2])
+
+        splitPace = entry[6].split(":")
+        paceTime = float(splitPace[0]) * 60 + float(splitPace[1])
+
+        # A marathon is 26 miles, but I put 23 just in case of errors
+        return runTime / paceTime < 23.0
 
     def remove_entry_above(self, data_by_id, year):
         for id in data_by_id:
@@ -119,21 +150,25 @@ class NaiveBayesClassification:
     def compute_gaussian_probability(self, x, mean, variance):
         return 1/(np.sqrt(2*np.pi * variance)) * np.exp(-((x - mean) ** 2)/(2*variance))
 
-    def compute_binary_probability(self, rank_feature, value, for_class):
-        count = 0
+    def compute_categorical_probability(self, rank_feature, value, for_class):
+        # Laplace smoothing
+        count = 1
         for i in self.separated_data_training[for_class]:
             if i[rank_feature] == value:
                 count += 1
         return count / float(len(self.separated_data_training[for_class]))
 
-    def compute_class_probability(self, features, for_class):
-        total = math.log(len(self.separated_data_training[for_class]) / float(len(self.dataset)))
-        for i in range(1, len(features)):
+    def compute_class_probability(self, features, for_class, length_dataset):
+        # P(Y)
+        total = math.log(len(self.separated_data_training[for_class]) / float(length_dataset))
+        # P(xi | y)
+        for i in range(2, len(features)):
             total += math.log(self.compute_gaussian_probability(features[i],
                                                                 self.separated_statistics[for_class][0][i],
                                                                 self.separated_statistics[for_class][1][i]))
-        # sex binary probability
-        total += math.log(self.compute_binary_probability(0, features[0], for_class))
+        # compute non-contiguous data: sex and number of participations
+        total += math.log(self.compute_categorical_probability(1, features[1], for_class))
+        total += math.log(self.compute_categorical_probability(0, features[0], for_class))
         return total
 
     def predict2017(self):
@@ -150,8 +185,8 @@ class NaiveBayesClassification:
             writer = csv.writer(f)
             writer.writerow(["ID", "PredictionFor2017"])
             for entry in self.dataset:
-                prob_0 = self.compute_class_probability(entry[1:-1], 0)
-                prob_1 = self.compute_class_probability(entry[1:-1], 1)
+                prob_0 = self.compute_class_probability(entry[1:-1], 0, len(self.dataset))
+                prob_1 = self.compute_class_probability(entry[1:-1], 1, len(self.dataset))
                 if prob_0 > prob_1:
                     predicted_class = 0
                 else:
@@ -160,30 +195,57 @@ class NaiveBayesClassification:
 
     def predict_for(self, year):
         self.dataset, result = self.load_csv(year)
+        random.shuffle(self.dataset)
+        length_training_set = int(0.8*(len(self.dataset)))
+        training_set = self.dataset[0:length_training_set]
+        validation_set = self.dataset[length_training_set+1:]
 
         # split training data set in two parts: one by class (0 = not participated in 2015, 1 = participated in 2016)
-        self.separated_data_training = self.separate_data_by_class(self.dataset)
+        self.separated_data_training = self.separate_data_by_class(training_set)
 
         # for each class compute statistics (mean and variance) for real values features
         self.separated_statistics = self.compute_separated_statistics(self.separated_data_training)
 
         # validation: How well can we predict for a given year?
-        nb_success = nb_failure = 0
-        for entry in self.dataset:
-            prob_0 = self.compute_class_probability(entry[1:-1], 0)
-            prob_1 = self.compute_class_probability(entry[1:-1], 1)
+        true_results_map = {}
+        for i in result:
+            if i[0] not in true_results_map:
+                true_results_map[i[0]] = i[1]
+            else:
+                print "Error!"
+        print "Training set: "
+        self.predict_and_print_statistics(training_set, true_results_map, length_training_set)
+        print "\n Validataion set: "
+        self.predict_and_print_statistics(validation_set, true_results_map, length_training_set)
+
+    def predict_and_print_statistics(self, data, true_results, lenght_training_set):
+        TP = FP = TN = FN = 0
+        for entry in data:
+            prob_0 = self.compute_class_probability(entry[1:-1], 0, lenght_training_set)
+            prob_1 = self.compute_class_probability(entry[1:-1], 1, lenght_training_set)
             if prob_0 > prob_1:
                 predicted_class = 0
             else:
                 predicted_class = 1
-
-            for i in result:
-                if i[0] == entry[0]:
-                    if predicted_class == i[1]:
-                        nb_success += 1
-                    else:
-                        nb_failure += 1
-        print "Success Rate :" + str(nb_success / float(len(self.dataset)))
+            if true_results[entry[0]] == predicted_class and predicted_class == 0:
+                TN += 1
+            elif true_results[entry[0]] == predicted_class and predicted_class == 1:
+                TP += 1
+            elif true_results[entry[0]] == 1 and predicted_class == 0:
+                FP += 1
+            else:
+                FN += 1
+        print "TN:"+str(TN)+" FN:"+str(FN)+" TP:"+str(TP)+" FP:"+str(FP)
+        accuracy = (TP+TN)/float((TP+FP+FN+TN))
+        print "Accuracy: "+str(accuracy)
+        recall = float(TP) / (TP+FN)
+        print "Recall: "+str(recall)
+        precision = float(TP) / (TP+FP)
+        print "Precision: "+str(precision)
+        specificity = float(TN) / (FP+TN)
+        print "Specificity: "+str(specificity)
+        false_positive_rate = float(FP) / (FP+TN)
+        print "False Positive Rate: "+str(false_positive_rate)
 
     def __init__(self):
         self.dataset = []
@@ -191,5 +253,4 @@ class NaiveBayesClassification:
         self.separated_statistics = {}
 
 
-
-NaiveBayesClassification().predict_for(2007)
+NaiveBayesClassification().predict2017()
