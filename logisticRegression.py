@@ -134,6 +134,7 @@ def normalizeAndAddX0(X):
 def shuffle(X, Y):
 
 	randomize = np.arange(len(X))
+	np.random.seed()
 	np.random.shuffle(randomize)
 	X = X[randomize]
 	Y = Y[randomize]
@@ -247,9 +248,6 @@ def test(X, Y, W):
 
 	(X, Y) = shuffle(X, Y)
 
-	for y in Y:
-		print y
-
 	X = normalizeAndAddX0(X)
 
 	WT = np.transpose(W)
@@ -329,9 +327,6 @@ def main():
 	data = data[1:]
 	result = result[1:]
 
-	data = data[145:] + data[:145] 
-	result = result[145:] + result[:145]
-
 	for entry in data:
 		entry.pop(0)
 		entry = [float(i) for i in entry]
@@ -344,8 +339,21 @@ def main():
 	length = len(data)
 	end = int(length * 0.8)
 
-	random.shuffle(parsedData, lambda: 0.4)
-	random.shuffle(parsedResult, lambda: 0.4)
+	parsedData = np.array(parsedData)
+
+	mergedData = np.c_[parsedData, parsedResult]
+
+	np.random.seed(0)
+	randomize = np.arange(len(mergedData))
+	np.random.shuffle(randomize)
+	mergedData = mergedData[randomize]
+
+	print mergedData
+
+	(row, col) = mergedData.shape
+
+	parsedResult = mergedData[:, col - 1]
+	parsedData = np.delete(mergedData, [col - 1], axis=1)
 
 	train_validate_data = parsedData[0:end]	
 	train_validate_result = parsedResult[0:end]
